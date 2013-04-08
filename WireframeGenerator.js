@@ -152,7 +152,7 @@ function CreatePolyOutlineSCAD(geometry)
 		var vA = cleanedVertices[i];
 
 		s += "/* vertex: " + i + "*/\n";
-		s += "intersection() { *mainShape(); difference() {";
+		s += "intersection() { mainShape(); difference() {";
 
 		var sticks = "#union() {";
 
@@ -283,12 +283,11 @@ function CreatePolyOutlineSCAD(geometry)
 		var fn  =  cleanedFaces[i];
 
 		if (i != 0) triangles += ", ";
-		triangles += "[" + vRenumbered[fn[0]] + "," + vRenumbered[fn[1]] + "," + vRenumbered[fn[2]] + "]"
+		triangles += "[" + fn[0] + "," + fn[1] + "," + fn[2] + "]"
 	}	
 
-	for (var i = 0; i < vRenumberedReverse.length; i++) {
-		var vertex = vertices[vRenumberedReverse[i]];
-
+	for (var i = 0; i < cleanedVertices.length; i++) {
+		var vertex = cleanedVertices[i];
 		if (i != 0) points += ", ";
 		points += pV3(vertex);
 	}
