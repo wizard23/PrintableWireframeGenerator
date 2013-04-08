@@ -141,8 +141,7 @@ function CreatePolyOutlineSCAD(geometry)
 	s+="%mainShape();\n";
 
 	// generate connectorz
-	//s += "intersection() { union() {";
-	
+
 	for (var i = 0; i < v2fTable.length; i++) {
 		var fList = v2fTable[i];
 		var vList = v2Oriented[i]; 
@@ -153,9 +152,9 @@ function CreatePolyOutlineSCAD(geometry)
 		var vA = cleanedVertices[i];
 
 		s += "/* vertex: " + i + "*/\n";
-		s += "intersection() { difference() {";
+		s += "intersection() { *mainShape(); difference() {";
 
-		var sticks = "union() {";
+		var sticks = "#union() {";
 
 		//alert(vList.length);
 		for (var vi = 0; vi < vList.length; vi++)
@@ -186,22 +185,24 @@ function CreatePolyOutlineSCAD(geometry)
 			var endV = new THREE.Vector3();
 			endV.subVectors(vB, centerDir);
 			
-			sticks += LineSCAD(startV, endV, "sR", "sL", "1");
+			//sticks += LineSCAD(startV, endV, "sR", "sL", "1");
 			
 			var outV = new THREE.Vector3();
-			outV.copy(bDir).multiplyScalar(-10).add(vA);
+			outV.copy(bDir).multiplyScalar(-30).add(vA);
 			var inV = new THREE.Vector3();
-			inV.copy(bDir).multiplyScalar(10).add(vA);
+			inV.copy(bDir).multiplyScalar(30).add(vA);
+
+			var cH = 3;
 		
 			var dLast = new THREE.Vector3();
-			dLast.addVectors(pDir, normal).multiplyScalar(10);
-			dLast.subVectors(pDir, bDir).multiplyScalar(10);
-			//dLast.subVectors(pDir, bDir).add(normal).multiplyScalar(10);
+			dLast.addVectors(pDir, normal).multiplyScalar(cH);
+			dLast.subVectors(pDir, bDir).multiplyScalar(cH);
+			//dLast.subVectors(pDir, bDir).sub(pNormal).multiplyScalar(cH);
 			//dLast.copy(pDir).multiplyScalar(10);
 			
 			var dNext = new THREE.Vector3();
-			dNext.addVectors(cDir, pNormal).multiplyScalar(10);
-			dNext.subVectors(cDir, bDir).multiplyScalar(10);
+			dNext.addVectors(cDir, pNormal).multiplyScalar(cH);
+			dNext.subVectors(cDir, bDir).multiplyScalar(cH);
 			//dNext.subVectors(cDir, bDir).add(pNormal).multiplyScalar(10);
 			//dNext.copy(cDir).multiplyScalar(10);
 	
@@ -221,7 +222,7 @@ function CreatePolyOutlineSCAD(geometry)
 			points = pV3(outV) + "," + pV3(outNext) + "," + pV3(outLast) + "," +
 						pV3(inV) + "," + pV3(inNext) + "," + pV3(inLast);
 
-			sticks +=  "polyhedron(points = [" + points + "], triangles = [[1,0,2], [1, 3, 4], [0, 1, 3]], convexity = 10);\n";
+			sticks +=  "polyhedron(points = [" + points + "], triangles = [[1,0,2], [3,4,5], [1, 4, 3], [0, 1, 3], [3, 5, 2], [0, 3, 2], [5, 4, 2], [2, 4, 1]], convexity = 10);\n";
 		}
 
 /*
@@ -263,7 +264,7 @@ function CreatePolyOutlineSCAD(geometry)
 
 		// true normal
 		nSum.add(vA);
-		s += "*" + LineSCAD(vA, nSum, "cR", "cL", "3");
+		s += LineSCAD(vA, nSum, "cR", "cL", "3");
 		s += sticks;
 
 		s += "}";
