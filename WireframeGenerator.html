@@ -88,6 +88,9 @@
 					mesh.receiveShadow = true;
 
 					scene.add( mesh );
+
+					var s = CreatePolyOutlineSCAD(lastLoadedGeometry);
+					document.getElementById('dump').innerHTML = s;
 	
 
 				} );
@@ -130,7 +133,7 @@
 				stats = new Stats();
 				stats.domElement.style.position = 'absolute';
 				stats.domElement.style.top = '0px';
-				container.appendChild( stats.domElement );
+				//container.appendChild( stats.domElement );
 				//*/
 				
 				//
@@ -210,40 +213,16 @@
 			}
 		</script>
 
-		<nostyle>
+		<style>
 			body {
 				font-family: Monospace;
-				background-color: #000000;
 			}
-
-			#info {
-				color: #fff;
-				position: absolute;
-				top: 10px;
-				width: 100%;
-				text-align: center;
-				z-index: 100;
-				display:block;
-
-			}
-
-			a { color: skyblue }
-			.button { background:#999; color:#eee; padding:0.2em 0.5em; cursor:pointer }
-			.highlight { background:orange; color:#fff; }
-
-			span {
-				display: inline-block;
-				width: 60px;
-				float: left;
-				text-align: center;
-			}
-
-		</nostyle>
+		</style>
 	</head>
 	<body onload="init();animate();">
 		<div id="info">
-			<a href="http://threejs.org" target="_blank">three.js</a> -
-			STL loader test by <a href="https://github.com/aleeper">aleeper</a>. PR2 head from <a href="http://www.ros.org/wiki/pr2_description">www.ros.org</a>
+			/* based on <a href="http://threejs.org" target="_blank">three.js</a> -
+			STL loader test by <a href="https://github.com/aleeper">aleeper</a>. PR2 head from <a href="http://www.ros.org/wiki/pr2_description">www.ros.org */</a>
 		</div>
 		<div>
 			<form name="controls" action="">
