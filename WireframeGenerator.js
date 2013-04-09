@@ -355,8 +355,8 @@ function generateStickSCAD(vA, vP, vB, vC)
 	//alert(angle);
 
 
-	var xLen = 1;
-	var extraH = 0.5;
+	var xLen = 0.2;
+	var extraH = 0.1;
 
 	var edgeX = Math.cos(-angle/2);
 	var edgeY = Math.sin(-angle/2);
