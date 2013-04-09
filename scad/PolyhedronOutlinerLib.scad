@@ -32,7 +32,14 @@ module PlaceLine(seg, r=1, l = 10, type=1)
 
 	translate(origin)
 	rotate(rot)
+	rotate([0,0,0])
 	{
+		for (i = [0:$children-1]) {
+			child(i);
+			echo(i);
+			echo(rot);
+		}		
+
 		if (type == 1)
 		{
 			rotate([0,0, 360]) cylinder(r=r, h=len, $fn=smoothness);

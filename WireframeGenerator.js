@@ -163,6 +163,8 @@ function CreatePolyOutlineSCAD(geometry)
 			var vB = cleanedVertices[vList[vi]];
 			var vC = cleanedVertices[vList[(vi+1)%vList.length]];
 
+			
+
 			var pDir = new THREE.Vector3();
 			pDir.subVectors(vP, vA).normalize();
 			var bDir = new THREE.Vector3();
@@ -219,10 +221,13 @@ function CreatePolyOutlineSCAD(geometry)
 			
 
 
+			sticks += LineSCAD(vA, vB, "sR", "sL", 0, "linear_extrude(height=30) " + generateStickSCAD(vA, vP, vB, vC));
+			//break;	
+			
+			
 			points = pV3(outV) + "," + pV3(outNext) + "," + pV3(outLast) + "," +
 						pV3(inV) + "," + pV3(inNext) + "," + pV3(inLast);
-
-			sticks +=  "polyhedron(points = [" + points + "], triangles = [[1,0,2], [3,4,5], [1, 4, 3], [0, 1, 3], [3, 5, 2], [0, 3, 2], [5, 4, 2], [2, 4, 1]], convexity = 10);\n";
+			//sticks +=  "polyhedron(points = [" + points + "], triangles = [[1,0,2], [3,4,5], [1, 4, 3], [0, 1, 3], [3, 5, 2], [0, 3, 2], [5, 4, 2], [2, 4, 1]], convexity = 10);\n";
 		}
 
 /*
@@ -264,13 +269,13 @@ function CreatePolyOutlineSCAD(geometry)
 
 		// true normal
 		nSum.add(vA);
-		s += LineSCAD(vA, nSum, "cR", "cL", "3");
+		//s += LineSCAD(vA, nSum, "cR", "cL", "3");
 		s += sticks;
 
 		s += "}";
 		s += "}";
 
-		break;
+		//if (i > 2) break;
 	}
 	//s += "}}%mainShape();";
 
@@ -297,9 +302,11 @@ function CreatePolyOutlineSCAD(geometry)
 	return s;
 }
 
-function LineSCAD(a, b, r, l, type)
+function LineSCAD(a, b, r, l, type, child)
 {
-	return "PlaceLine([" + pV3(a) + "," + pV3(b) + "],r=" + r + ",l=" + l + ",type=" + type + ");\n";
+	child = child || "";
+
+	return "PlaceLine([" + pV3(a) + "," + pV3(b) + "],r=" + r + ",l=" + l + ",type=" + type + ") {" + child + "}\n";
 }
 
 function reorderFace(list, i)
@@ -322,5 +329,143 @@ function dV3(v3)
 
 function copyToClipboard (text) {
   window.prompt ("Copy to clipboard: Ctrl+C, Enter", text);
+}
+
+function generateStickSCAD(vA, vP, vB, vC)
+{
+	var s = "";
+
+	var pDir = new THREE.Vector3();
+	pDir.subVectors(vP, vA).normalize();
+	var bDir = new THREE.Vector3();
+	bDir.subVectors(vB, vA).normalize();
+	var cDir = new THREE.Vector3();
+	cDir.subVectors(vC, vA).normalize();
+
+	var pNormal = new THREE.Vector3();
+	pNormal.crossVectors( pDir, bDir ).normalize();
+	var normal = new THREE.Vector3();
+	normal.crossVectors( bDir, cDir ).normalize();
+
+
+	var cosA = pNormal.dot(normal);
+	var angle = Math.acos(cosA);
+	//alert(pV3(normal));
+	//alert(pV3(pNormal));
+	//alert(angle);
+
+
+	var xLen = 1;
+	var extraH = 0.5;
+
+	var edgeX = Math.cos(-angle/2);
+	var edgeY = Math.sin(-angle/2);
+
+	edgeY /= edgeX;
+	edgeY *= xLen
+	edgeX = xLen;
+
+	
+	var bottomY = -extraH;
+	if (edgeY < 0)
+		bottomY = edgeY - extraH; 
+
+
+	var centerDir = new THREE.Vector3();
+	centerDir.addVectors(pNormal, normal).normalize();
+
+	var cosR = centerDir.dot(bDir);
+	var rA = 360 * Math.acos(cosR);
+
+	while (rA > 360)
+	{
+		rA -= 360;
+	}
+
+	var bR = LineRotations(bDir).multiplyScalar(1); //.multiplyScalar(180/Math.PI);
+	var bN = LineRotations(centerDir).multiplyScalar(180/Math.PI);
+	//alert(pV3(bR));
+	//alert(pV3(bN));
+	//alert( (bN.z - bR.x) + bR.z);
+
+
+	var invR = new THREE.Matrix4().setRotationFromEuler(bR, "ZXY");
+	// Simple rig for rotating around 3 axes
+
+	var m1 = new THREE.Matrix4();
+	var m3 = new THREE.Matrix4();
+
+	m1.makeRotationZ( -bR.z );
+	m3.makeRotationX( -bR.x );
+
+
+	revN = m1.multiplyVector3(normal);
+	revN = m3.multiplyVector3(revN);
+	
+	//lert(pV3(revN));	
+	//alert(pV3(LineRotations(bDir).multiplyScalar(180/Math.PI)));
+	//alert(pV3(bN));
+	
+	rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
+	rA = rA - ((180 - angle* 180/Math.PI)/2);
+	
+
+	s += "rotate([0,0," + rA + "]) polygon([[0,0],["+edgeX+","+edgeY+"],["+edgeX+","+bottomY+"]," +
+						"[-"+edgeX+","+bottomY+"],[-"+edgeX+","+edgeY+"]]);";
+
+	return s;
+
+
+/*
+	var centerDir = new THREE.Vector3();
+	centerDir.addVectors(pNormal, normal).normalize();
+
+	var startV = new THREE.Vector3();
+	startV.subVectors(vA, centerDir);
+	var endV = new THREE.Vector3();
+	endV.subVectors(vB, centerDir);
+
+	var outV = new THREE.Vector3();
+	outV.copy(bDir).multiplyScalar(-30).add(vA);
+	var inV = new THREE.Vector3();
+	inV.copy(bDir).multiplyScalar(30).add(vA);
+
+	var cH = 3;
+
+	var dLast = new THREE.Vector3();
+	dLast.addVectors(pDir, normal).multiplyScalar(cH);
+	dLast.subVectors(pDir, bDir).multiplyScalar(cH);
+	//dLast.subVectors(pDir, bDir).sub(pNormal).multiplyScalar(cH);
+	//dLast.copy(pDir).multiplyScalar(10);
+
+	var dNext = new THREE.Vector3();
+	dNext.addVectors(cDir, pNormal).multiplyScalar(cH);
+	dNext.subVectors(cDir, bDir).multiplyScalar(cH);
+	//dNext.subVectors(cDir, bDir).add(pNormal).multiplyScalar(10);
+	//dNext.copy(cDir).multiplyScalar(10);
+
+
+	var outLast = new THREE.Vector3();
+	outLast.addVectors(dLast, outV);
+	var outNext = new THREE.Vector3();
+	outNext.addVectors(dNext, outV);
+
+	var inLast = new THREE.Vector3();
+	inLast.addVectors(dLast, inV);
+	var inNext = new THREE.Vector3();
+	inNext.addVectors(dNext, inV);
+
+
+
+	points = pV3(outV) + "," + pV3(outNext) + "," + pV3(outLast) + "," +
+				pV3(inV) + "," + pV3(inNext) + "," + pV3(inLast);
+*/
+
+	
+}
+
+function LineRotations(v3) {
+	var r = new THREE.Vector3(Math.atan2(Math.sqrt(v3.x*v3.x+v3.y*v3.y), v3.z), 0, Math.atan2(v3.y, v3.x)+Math.PI/2);
+	return r;
 }
 	
