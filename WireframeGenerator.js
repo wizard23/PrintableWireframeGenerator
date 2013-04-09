@@ -146,6 +146,8 @@ function CreatePolyOutlineSCAD(geometry)
 		var fList = v2fTable[i];
 		var vList = v2Oriented[i]; 
 
+
+		//if (i != 4 && i != 3) continue;
 		if (fList.length == 0) alert("this should not happen");
 
 		var nSum = new THREE.Vector3();	
@@ -275,7 +277,7 @@ function CreatePolyOutlineSCAD(geometry)
 		s += "}";
 		s += "}";
 
-		//if (i > 2) break;
+		//if (i > 1) break;
 	}
 	//s += "}}%mainShape();";
 
@@ -350,13 +352,17 @@ function generateStickSCAD(vA, vP, vB, vC)
 
 	var cosA = pNormal.dot(normal);
 	var angle = Math.acos(cosA);
+	
+	// I dont understand that criterium but it works for me :)
+	if (angle < Math.PI/2) angle =  -angle;
+	//if (angle < 0) angle = 2*Math.PI + angle;
 	//alert(pV3(normal));
 	//alert(pV3(pNormal));
-	//alert(angle);
+	alert(angle);
 
 
-	var xLen = 0.2;
-	var extraH = 0.1;
+	var xLen = 0.5;
+	var extraH = 0.2;
 
 	var edgeX = Math.cos(-angle/2);
 	var edgeY = Math.sin(-angle/2);
@@ -364,6 +370,8 @@ function generateStickSCAD(vA, vP, vB, vC)
 	edgeY /= edgeX;
 	edgeY *= xLen
 	edgeX = xLen;
+
+	//if (edgeY < -1.5) return ";"
 
 	
 	var bottomY = -extraH;
@@ -375,12 +383,7 @@ function generateStickSCAD(vA, vP, vB, vC)
 	centerDir.addVectors(pNormal, normal).normalize();
 
 	var cosR = centerDir.dot(bDir);
-	var rA = 360 * Math.acos(cosR);
-
-	while (rA > 360)
-	{
-		rA -= 360;
-	}
+	
 
 	var bR = LineRotations(bDir).multiplyScalar(1); //.multiplyScalar(180/Math.PI);
 	var bN = LineRotations(centerDir).multiplyScalar(180/Math.PI);
@@ -406,7 +409,7 @@ function generateStickSCAD(vA, vP, vB, vC)
 	//alert(pV3(LineRotations(bDir).multiplyScalar(180/Math.PI)));
 	//alert(pV3(bN));
 	
-	rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
+	var rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
 	rA = rA - ((180 - angle* 180/Math.PI)/2);
 	
 
