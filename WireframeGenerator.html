@@ -94,7 +94,13 @@
 	
 
 				} );
-				var stlFile = "./models/convextest3.stl";
+				var stlFile;
+				stlFile = "./models/convextest3.stl";
+				stlFile = "./models/platonic/tetrahedron_4er.stl";
+				//stlFile = "./models/diamondnormalsfixed.stl";
+				//stlFile = "./models/invader.stl";
+				//stlFile = "./models/platonic/tetrahedron_4er.stl";
+				loader.load(stlFile);
 				
 				//loader.load( './models/stl/ascii/slotted_disk.stl' );
 				//loader.load( './models/stl/cube1mm.stl' );
@@ -104,11 +110,9 @@
 				//loader.load("./models/platonic/tetrahedron_4er.stl");
 				//loader.load("./models/triatest.stl");
 				//loader.load("./models/convextest2.stl");
-				loader.load(stlFile);
 
 
 				// Lights
-
 				scene.add( new THREE.AmbientLight( 0x777777 ) );
 
 				addShadowedLight( 1, 1, 1, 0xffffff, 1.35 );
