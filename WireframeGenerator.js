@@ -223,7 +223,10 @@ function CreatePolyOutlineSCAD(geometry)
 			
 
 
-			sticks += LineSCAD(vA, vB, "sR", "sL", 0, "linear_extrude(height=30) " + generateStickSCAD(vA, vP, vB, vC));
+			var oneStick = generateStickSCAD(vA, vP, vB, vC);
+			
+			if (oneStick)
+				sticks += oneStick;
 			//break;	
 			
 			
@@ -277,7 +280,8 @@ function CreatePolyOutlineSCAD(geometry)
 		s += "}";
 		s += "}";
 
-		//if (i > 1) break;
+	//		if (i > 1) 
+	//		break;
 	}
 	//s += "}}%mainShape();";
 
@@ -340,7 +344,9 @@ function generateStickSCAD(vA, vP, vB, vC)
 	var pDir = new THREE.Vector3();
 	pDir.subVectors(vP, vA).normalize();
 	var bDir = new THREE.Vector3();
-	bDir.subVectors(vB, vA).normalize();
+	bDir.subVectors(vB, vA);
+	var edgeLen = bDir.length();	
+	bDir.normalize();
 	var cDir = new THREE.Vector3();
 	cDir.subVectors(vC, vA).normalize();
 
@@ -358,7 +364,8 @@ function generateStickSCAD(vA, vP, vB, vC)
 	//if (angle < 0) angle = 2*Math.PI + angle;
 	//alert(pV3(normal));
 	//alert(pV3(pNormal));
-	alert(angle);
+//	alert(angle);
+	//if (Math.abs(angle) < 0.001) return null;
 
 
 	var xLen = 0.5;
@@ -415,6 +422,9 @@ function generateStickSCAD(vA, vP, vB, vC)
 
 	s += "rotate([0,0," + rA + "]) polygon([[0,0],["+edgeX+","+edgeY+"],["+edgeX+","+bottomY+"]," +
 						"[-"+edgeX+","+bottomY+"],[-"+edgeX+","+edgeY+"]]);";
+
+	
+	s =  LineSCAD(vA, vB, "sR", "sL", 0, "linear_extrude(height=" + edgeLen + ") " + s);
 
 	return s;
 
