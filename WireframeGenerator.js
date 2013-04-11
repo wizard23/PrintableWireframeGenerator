@@ -147,17 +147,19 @@ function CreatePolyOutlineSCAD(geometry)
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
 	s+="generateConnectors = 0; generateSticks=1-generateConnectors;";
 	s+="sR=" + sR + "; sL = 6; cR=100; cL=10;\n";
-	//s+="!vertexBase(0, 1);";
+	s+="!edge0_1(1);";
 	s+="%mainShape();\n";
 
 	// generate connectorz
 
 
-	var connectorzFn = ""; 
+	var vertexBaseFn = ""; 
+
+	var sticksFn = "";
 
 	for (var i = 0; i < v2fTable.length; i++) {
 
-		connectorzFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 
+		vertexBaseFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 
 
 
 		var fList = v2fTable[i];
@@ -170,16 +172,20 @@ function CreatePolyOutlineSCAD(geometry)
 		var nSum = new THREE.Vector3();	
 		var vA = cleanedVertices[i];
 
+		
+		
 		s += "/* vertex: " + i + "*/\n";
 		s += "intersection() { mainShape(); difference() {";
+
 
 		var sticks = "#union() {";
 
 		//alert(vList.length);
 		for (var vi = 0; vi < vList.length; vi++)
 		{
+			var bIdx = vList[vi];
 			var vP = cleanedVertices[vList[(vi+vList.length-1)%vList.length]];
-			var vB = cleanedVertices[vList[vi]];
+			var vB = cleanedVertices[bIdx];
 			var vC = cleanedVertices[vList[(vi+1)%vList.length]];
 
 			var pDir = new THREE.Vector3();
@@ -202,67 +208,33 @@ function CreatePolyOutlineSCAD(geometry)
 			//var smallCutL=3;
 
 			
-
-			var mainStick = generateStickSCAD(vA, vP, vB, vC, 0, 0, 1, 0);
+			var invRot = generateStickSCAD(vA, vP, vB, vC, 0, 0, 0, 0, true);
+			var mainStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, 1, 0);
 			//var mainCutStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 1, 0);
 
 			var smallStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, -wall, 0);
 			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.15);
+
+			if (i < bIdx)
+			{
+				
+		
+				var realE = "";
+				realE += "intersection() { mainShape(); ";
+				realE += "union(){difference(){"+mainStick+"vertexBase"+i+"();vertexBase"+vList[vi]+"();}"+ smallStick + "}\n";
+				realE += "}"; // intersection end
+
+				sticksFn += "module edge" + i + "_" + bIdx + "(forPrint){"; // module start
+				sticksFn += "if (forPrint) " + invRot + "{" + realE + "}";
+				sticksFn += "if (!forPrint) {" + realE + "}";
+
+				sticksFn += "}"; // module end
+			}
 			
 			if (cutStick)
 			{
 				sticks += "if (generateConnectors){"+cutStick+"}\n";
-				sticks += "if (generateSticks){difference(){"+mainStick+"vertexBase"+i+"();vertexBase"+vList[vi]+"();}"+ smallStick + "}\n";
 			}
-
-			//break;	
-			
-			
-
-			/*
-			var centerDir = new THREE.Vector3();
-			centerDir.addVectors(pNormal, normal).normalize();
-
-			var startV = new THREE.Vector3();
-			startV.subVectors(vA, centerDir);
-			var endV = new THREE.Vector3();
-			endV.subVectors(vB, centerDir);
-			
-			//sticks += LineSCAD(startV, endV, "sR", "sL", "1");
-			
-			var outV = new THREE.Vector3();
-			outV.copy(bDir).multiplyScalar(-30).add(vA);
-			var inV = new THREE.Vector3();
-			inV.copy(bDir).multiplyScalar(30).add(vA);
-
-
-			var dLast = new THREE.Vector3();
-			dLast.addVectors(pDir, normal).multiplyScalar(cH);
-			dLast.subVectors(pDir, bDir).multiplyScalar(cH);
-			//dLast.subVectors(pDir, bDir).sub(pNormal).multiplyScalar(cH);
-			//dLast.copy(pDir).multiplyScalar(10);
-			
-			var dNext = new THREE.Vector3();
-			dNext.addVectors(cDir, pNormal).multiplyScalar(cH);
-			dNext.subVectors(cDir, bDir).multiplyScalar(cH);
-			//dNext.subVectors(cDir, bDir).add(pNormal).multiplyScalar(10);
-			//dNext.copy(cDir).multiplyScalar(10);
-	
-
-			var outLast = new THREE.Vector3();
-			outLast.addVectors(dLast, outV);
-			var outNext = new THREE.Vector3();
-			outNext.addVectors(dNext, outV);
-
-			var inLast = new THREE.Vector3();
-			inLast.addVectors(dLast, inV);
-			var inNext = new THREE.Vector3();
-			inNext.addVectors(dNext, inV);
-			
-			points = pV3(outV) + "," + pV3(outNext) + "," + pV3(outLast) + "," +
-						pV3(inV) + "," + pV3(inNext) + "," + pV3(inLast);
-			//sticks +=  "polyhedron(points = [" + points + "], triangles = [[1,0,2], [3,4,5], [1, 4, 3], [0, 1, 3], [3, 5, 2], [0, 3, 2], [5, 4, 2], [2, 4, 1]], convexity = 10);\n";
-			*/
 		}
 		sticks += "}";
 
@@ -270,8 +242,8 @@ function CreatePolyOutlineSCAD(geometry)
 		// true normal
 		nSum.add(vA);
 
-		connectorzFn += LineSCAD(vA, nSum, "cR", "cL", "3");
-		connectorzFn += "}}";
+		vertexBaseFn += LineSCAD(vA, nSum, "cR", "cL", "3");
+		vertexBaseFn += "}}";
 		s += "/* NORMAL */ if (generateConnectors) intersection() {" + LineSCAD(vA, nSum, "cR", "cL", "3") + "*" + SphereSCAD(noCutL+smallCutL+conIntersect, vA) + "}";
 		s += sticks;
 
@@ -303,8 +275,9 @@ function CreatePolyOutlineSCAD(geometry)
 		points += pV3(vertex);
 	}
 	
-	s+= connectorzFn;
-	s+= "module mainShape() {polyhedron(points = [" + points + "], triangles = [" + triangles + "], convexity = 10);}\n";
+	s += vertexBaseFn;
+	s += sticksFn;
+	s += "module mainShape() {polyhedron(points = [" + points + "], triangles = [" + triangles + "], convexity = 10);}\n";
 	
 	return s;
 }
@@ -351,7 +324,7 @@ function copyToClipboard (text) {
   window.prompt ("Copy to clipboard: Ctrl+C, Enter", text);
 }
 
-function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack)
+function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack, returnInvRot)
 {
 	slack = slack || 0;
 	var s = "";
@@ -376,15 +349,24 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack)
 	
 	// I dont understand that criterium but it works for me :)
 	if (angle < Math.PI/2) angle =  -angle;
-	//if (angle < 0) angle = 2*Math.PI + angle;
-	//alert(pV3(normal));
-	//alert(pV3(pNormal));
-//	alert(angle);
-	//if (Math.abs(angle) < 0.001) return null;
 
+	var bR = LineRotations(bDir).multiplyScalar(1);
+	var invR = new THREE.Matrix4().setRotationFromEuler(bR, "ZXY");
+	
 
-	var xLen = 1.5;
-	var extraH = 1.5;
+	var m1 = new THREE.Matrix4();
+	var m3 = new THREE.Matrix4();
+	m1.makeRotationZ( -bR.z );
+	m3.makeRotationX( -bR.x );
+
+	revN = m1.multiplyVector3(normal);
+	revN = m3.multiplyVector3(revN);
+	
+	var rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
+	rA = rA - ((180 - angle* 180/Math.PI)/2);
+
+	var xLen = 1;
+	var extraH = 1.1;
 
 	var edgeX = Math.cos(-angle/2);
 	var edgeY = Math.sin(-angle/2);
@@ -393,7 +375,6 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack)
 	edgeY *= xLen
 	edgeX = xLen;
 
-	//if (edgeY < -1.5) return ";"
 
 	
 	var bottomY = -extraH;
@@ -401,39 +382,19 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack)
 		bottomY = edgeY - extraH; 
 
 
-	var centerDir = new THREE.Vector3();
-	centerDir.addVectors(pNormal, normal).normalize();
+	//var centerDir = new THREE.Vector3();
+	//centerDir.addVectors(pNormal, normal).normalize();
 
-	var cosR = centerDir.dot(bDir);
+	//var cosR = centerDir.dot(bDir);
+
+	if (returnInvRot) 
+	{
+		return "translate([0,0," + (-bottomY) + "]) rotate([90,0,0]) rotate([0,0," + (-rA) + "]) rotate([" + (-bR.x* 180/Math.PI) + ",0,0]) " +
+			"rotate([0,0,"+ (-bR.z* 180/Math.PI) + "]) translate(-" + pV3(vA) + ")";
+	}
 	
 
-	var bR = LineRotations(bDir).multiplyScalar(1); //.multiplyScalar(180/Math.PI);
-	var bN = LineRotations(centerDir).multiplyScalar(180/Math.PI);
-	//alert(pV3(bR));
-	//alert(pV3(bN));
-	//alert( (bN.z - bR.x) + bR.z);
-
-
-	var invR = new THREE.Matrix4().setRotationFromEuler(bR, "ZXY");
-	// Simple rig for rotating around 3 axes
-
-	var m1 = new THREE.Matrix4();
-	var m3 = new THREE.Matrix4();
-
-	m1.makeRotationZ( -bR.z );
-	m3.makeRotationX( -bR.x );
-
-
-	revN = m1.multiplyVector3(normal);
-	revN = m3.multiplyVector3(revN);
 	
-	//lert(pV3(revN));	
-	//alert(pV3(LineRotations(bDir).multiplyScalar(180/Math.PI)));
-	//alert(pV3(bN));
-	
-	var rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
-	rA = rA - ((180 - angle* 180/Math.PI)/2);
-
 	s += "rotate([0,0," + rA + "]) polygon([[0," + (hDelta + slack) + "],["+(edgeX+slack)+","+(edgeY+hDelta+slack)+"],["+(edgeX+slack)+","+(bottomY+slack)+"]," +
 						"[-"+(edgeX+slack)+","+(bottomY+slack)+"],[-"+(edgeX+ slack)+","+(edgeY+hDelta+slack)+"]]);";
 
