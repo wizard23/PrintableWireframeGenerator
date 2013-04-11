@@ -147,24 +147,21 @@ function CreatePolyOutlineSCAD(geometry)
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
 	s+="generateConnectors = 0; generateSticks=1-generateConnectors;";
 	s+="sR=" + sR + "; sL = 6; cR=100; cL=10;\n";
-	s+="!edge0_1(1);";
+	s+="*edge0_1(1); !vertex0(1);";
 	s+="%mainShape();\n";
 
 	// generate connectorz
 
 
 	var vertexBaseFn = ""; 
+	var vertexFn = "";
 
 	var sticksFn = "";
 
-	for (var i = 0; i < v2fTable.length; i++) {
-
-		vertexBaseFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 
-
-
+	for (var i = 0; i < v2fTable.length; i++) 
+	{
 		var fList = v2fTable[i];
 		var vList = v2Oriented[i]; 
-
 
 		//if (i != 4 && i != 3) continue;
 		if (fList.length == 0) alert("this should not happen");
@@ -172,14 +169,8 @@ function CreatePolyOutlineSCAD(geometry)
 		var nSum = new THREE.Vector3();	
 		var vA = cleanedVertices[i];
 
+		var cutSticks = "";
 		
-		
-		s += "/* vertex: " + i + "*/\n";
-		s += "intersection() { mainShape(); difference() {";
-
-
-		var sticks = "#union() {";
-
 		//alert(vList.length);
 		for (var vi = 0; vi < vList.length; vi++)
 		{
@@ -215,10 +206,11 @@ function CreatePolyOutlineSCAD(geometry)
 			var smallStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, -wall, 0);
 			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.15);
 
+
+			cutSticks += cutStick;
+
 			if (i < bIdx)
 			{
-				
-		
 				var realE = "";
 				realE += "intersection() { mainShape(); ";
 				realE += "union(){difference(){"+mainStick+"vertexBase"+i+"();vertexBase"+vList[vi]+"();}"+ smallStick + "}\n";
@@ -230,25 +222,29 @@ function CreatePolyOutlineSCAD(geometry)
 
 				sticksFn += "}"; // module end
 			}
-			
-			if (cutStick)
-			{
-				sticks += "if (generateConnectors){"+cutStick+"}\n";
-			}
 		}
-		sticks += "}";
-
 
 		// true normal
-		nSum.add(vA);
+		var nSumVA = new THREE.Vector3();
+		nSumVA.addVectors(nSum, vA);
 
-		vertexBaseFn += LineSCAD(vA, nSum, "cR", "cL", "3");
+		vertexBaseFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 	
+		vertexBaseFn += LineSCAD(vA, nSumVA, "cR", "cL", "3");
 		vertexBaseFn += "}}";
-		s += "/* NORMAL */ if (generateConnectors) intersection() {" + LineSCAD(vA, nSum, "cR", "cL", "3") + "*" + SphereSCAD(noCutL+smallCutL+conIntersect, vA) + "}";
-		s += sticks;
 
-		s += "}";
-		s += "}";
+		
+		var vRot = LineRotations(nSum);
+
+		vertexFn += "module vertex" + i + "(forPrint){if(forPrint) translate([0,0,cL]) rotate([" + (-vRot.x* 180/Math.PI) + ",0,0]) " +
+			"rotate([0,0,"+ (-vRot.z* 180/Math.PI) + "]) translate(-" + pV3(vA) + ")  difference(){vertexBase" + i + "(); "; 
+		vertexFn += cutSticks;
+		vertexFn += "}";
+		vertexFn += "if(!forPrint)difference(){vertexBase" + i + "(); "; 
+		vertexFn += cutSticks;
+		vertexFn += "}";
+		vertexFn += "}";
+
+		//s += "/* NORMAL */ if (generateConnectors) intersection() {" + LineSCAD(vA, nSum, "cR", "cL", "3") + "*" + SphereSCAD(noCutL+smallCutL+conIntersect, vA) + "}";
 
 	//		if (i > 1) 
 		//break;
@@ -277,6 +273,7 @@ function CreatePolyOutlineSCAD(geometry)
 	
 	s += vertexBaseFn;
 	s += sticksFn;
+	s += vertexFn;
 	s += "module mainShape() {polyhedron(points = [" + points + "], triangles = [" + triangles + "], convexity = 10);}\n";
 	
 	return s;
