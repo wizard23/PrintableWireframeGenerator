@@ -136,11 +136,22 @@ function CreatePolyOutlineSCAD(geometry)
 
 
 	var sR = 1.5;
+
+	var wall = 1;
+	var noCutL=7;
+	var extraCutDepth=1; // to give slack 	
+	var smallCutL=3;
+	var conIntersect=2;
+	
+	
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;;"
-	s+="sR=" + sR + "; sL = 6; cR=20; cL=9;\n";
+	s+="generateConnectors = 1; generateSticks = 0;";
+	s+="sR=" + sR + "; sL = 6; cR=100; cL=10;\n";
 	s+="%mainShape();\n";
 
 	// generate connectorz
+
+
 
 	for (var i = 0; i < v2fTable.length; i++) {
 		var fList = v2fTable[i];
@@ -165,8 +176,6 @@ function CreatePolyOutlineSCAD(geometry)
 			var vB = cleanedVertices[vList[vi]];
 			var vC = cleanedVertices[vList[(vi+1)%vList.length]];
 
-			
-
 			var pDir = new THREE.Vector3();
 			pDir.subVectors(vP, vA).normalize();
 			var bDir = new THREE.Vector3();
@@ -181,6 +190,31 @@ function CreatePolyOutlineSCAD(geometry)
 
 			nSum.add(normal);
 
+			//var wall = 1;
+			//var noCutL=5;
+			//var extraCutDepth=1; // to give slack 	
+			//var smallCutL=3;
+
+			
+
+			var mainStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 0, 0);
+			var mainCutStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 1, 0);
+
+			var smallStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, -wall, 0);
+			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.15);
+			
+			if (cutStick)
+			{
+				sticks += mainStick;
+				sticks += "if (generateConnectors) {" + mainCutStick + cutStick+ "}";
+				sticks += "if (generateSticks) {"  + smallStick + "}";
+			}
+
+			//break;	
+			
+			
+
+			/*
 			var centerDir = new THREE.Vector3();
 			centerDir.addVectors(pNormal, normal).normalize();
 
@@ -196,8 +230,7 @@ function CreatePolyOutlineSCAD(geometry)
 			var inV = new THREE.Vector3();
 			inV.copy(bDir).multiplyScalar(30).add(vA);
 
-			var cH = 3;
-		
+
 			var dLast = new THREE.Vector3();
 			dLast.addVectors(pDir, normal).multiplyScalar(cH);
 			dLast.subVectors(pDir, bDir).multiplyScalar(cH);
@@ -221,25 +254,17 @@ function CreatePolyOutlineSCAD(geometry)
 			var inNext = new THREE.Vector3();
 			inNext.addVectors(dNext, inV);
 			
-
-
-			var oneStick = generateStickSCAD(vA, vP, vB, vC);
-			
-			if (oneStick)
-				sticks += oneStick;
-			//break;	
-			
-			
 			points = pV3(outV) + "," + pV3(outNext) + "," + pV3(outLast) + "," +
 						pV3(inV) + "," + pV3(inNext) + "," + pV3(inLast);
 			//sticks +=  "polyhedron(points = [" + points + "], triangles = [[1,0,2], [3,4,5], [1, 4, 3], [0, 1, 3], [3, 5, 2], [0, 3, 2], [5, 4, 2], [2, 4, 1]], convexity = 10);\n";
+			*/
 		}
 		sticks += "}";
 
 
 		// true normal
 		nSum.add(vA);
-		s += LineSCAD(vA, nSum, "cR", "cL", "3");
+		s += "/* NORMAL */ if (generateConnectors) intersection() {" + LineSCAD(vA, nSum, "cR", "cL", "3") + "*" + SphereSCAD(noCutL+smallCutL+conIntersect, vA) + "}";
 		s += sticks;
 
 		s += "}";
@@ -280,6 +305,17 @@ function LineSCAD(a, b, r, l, type, child)
 	return "PlaceLine([" + pV3(a) + "," + pV3(b) + "],r=" + r + ",l=" + l + ",type=" + type + ") {" + child + "}\n";
 }
 
+function SphereSCAD(r, translate, fn)
+{
+	var s = "";
+	if (translate)
+		s += "translate(" + pV3(translate) + ")";
+	s += "sphere(" + r;
+	if (fn) s += ",$f=" + fn;
+	s += ");";
+	return s;
+}
+
 function reorderFace(list, i)
 {
 	if (i == 0) return list;
@@ -293,6 +329,8 @@ function pV3(v3)
 	return "[" + v3.x + "," + v3.y + "," + v3.z + "]";
 }
 
+
+
 function dV3(v3)
 {
 	return "x" + v3.x + "/y" + v3.y +"/z" + v3.z;
@@ -302,8 +340,9 @@ function copyToClipboard (text) {
   window.prompt ("Copy to clipboard: Ctrl+C, Enter", text);
 }
 
-function generateStickSCAD(vA, vP, vB, vC)
+function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack)
 {
+	slack = slack || 0;
 	var s = "";
 
 	var pDir = new THREE.Vector3();
@@ -333,8 +372,8 @@ function generateStickSCAD(vA, vP, vB, vC)
 	//if (Math.abs(angle) < 0.001) return null;
 
 
-	var xLen = 0.5;
-	var extraH = 0.5;
+	var xLen = 1.5;
+	var extraH = 1.5;
 
 	var edgeX = Math.cos(-angle/2);
 	var edgeY = Math.sin(-angle/2);
@@ -383,14 +422,12 @@ function generateStickSCAD(vA, vP, vB, vC)
 	
 	var rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
 	rA = rA - ((180 - angle* 180/Math.PI)/2);
-	
-	cleanCSGDelta = 1.001;
 
-	s += "rotate([0,0," + rA + "]) polygon([[0," + cleanCSGDelta + "],["+edgeX+","+(edgeY+cleanCSGDelta)+"],["+edgeX+","+bottomY+"]," +
-						"[-"+edgeX+","+bottomY+"],[-"+edgeX+","+(edgeY+cleanCSGDelta)+"]]);";
+	s += "rotate([0,0," + rA + "]) polygon([[0," + (hDelta + slack) + "],["+(edgeX+slack)+","+(edgeY+hDelta+slack)+"],["+(edgeX+slack)+","+(bottomY+slack)+"]," +
+						"[-"+(edgeX+slack)+","+(bottomY+slack)+"],[-"+(edgeX+ slack)+","+(edgeY+hDelta+slack)+"]]);";
 
-	
-	s =  LineSCAD(vA, vB, "sR", "sL", 0, "linear_extrude(height=" + edgeLen + ") " + s);
+	var cutSum = cutA + cutB;
+	s =  LineSCAD(vA, vB, "sR", "sL", 0, "translate([0,0," + cutA + "]) linear_extrude(height=" + (edgeLen - cutSum) + ") " + s);
 
 	return s;
 }

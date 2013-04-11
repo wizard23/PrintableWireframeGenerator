@@ -42,8 +42,8 @@ module PlaceLine(seg, r=1, l = 10, type=1)
 
 		if (type == 1)
 		{
-			rotate([0,0, 360]) cylinder(r=r, h=len, $fn=smoothness);
-
+			//rotate([0,0, 360]) cylinder(r=r, h=len, $fn=smoothness);
+			cylinder(r=r, h=l, $fn=smoothness);
 		} 
 		if (type == 2)
 		{
@@ -52,6 +52,7 @@ module PlaceLine(seg, r=1, l = 10, type=1)
 		if (type == 3)
 		{
 			cube([r,r,2*l], center=true);
+			//cylinder(r=r, h=2*l, center=true);
 		}
 	}
 }
