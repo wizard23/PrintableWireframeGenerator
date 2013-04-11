@@ -145,8 +145,8 @@ function CreatePolyOutlineSCAD(geometry)
 	
 	
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
-	s+="forPrint=1; generateConnectors = 0; generateSticks=1-generateConnectors;";
-	s+="sR=" + sR + "; sL = 6; cR=100; cL=10;\n";
+	s+="forPrint=1; generateConnectors = 0; generateSticks=1;";
+	s+="sR=" + sR + "; sL = 6; cR=30; cL=10;\n";
 	s+="*edge0_1(1); *vertex0(1);";
 	s+="if (!forPrint) %mainShape();\n";
 
@@ -161,6 +161,8 @@ function CreatePolyOutlineSCAD(geometry)
 	var vAssemblyPosX = 0;
 	var vertexAssembly = "if (generateConnectors && forPrint) union() {";
 
+	var sAssemblyPosX = 0;
+	var sticksAssembly = "if (generateSticks && forPrint) union() {";
 
 	for (var i = 0; i < v2fTable.length; i++) 
 	{
@@ -224,6 +226,10 @@ function CreatePolyOutlineSCAD(geometry)
 				sticksFn += "if (forPrint) " + invRot + "{" + realE + "}";
 				sticksFn += "if (!forPrint) {" + realE + "}";
 
+				sticksAssembly += "translate([" + (sAssemblyPosX) + ",0,0]) edge" + i + "_" + bIdx + "(1);"
+
+				sAssemblyPosX += 5;
+
 				sticksFn += "}"; // module end
 			}
 		}
@@ -255,6 +261,7 @@ function CreatePolyOutlineSCAD(geometry)
 		//if (i > 1) break;
 	}
 	vertexAssembly += "}";
+	sticksAssembly += "}";
 
 	// generate original poly in scad
 	var points = "";
@@ -274,6 +281,7 @@ function CreatePolyOutlineSCAD(geometry)
 	}
 	
 	s += vertexAssembly;
+	s += "translate([0,-20,0])" + sticksAssembly;
 	s += vertexBaseFn;
 	s += sticksFn;
 	s += vertexFn;
