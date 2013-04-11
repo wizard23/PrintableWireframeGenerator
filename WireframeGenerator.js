@@ -144,16 +144,22 @@ function CreatePolyOutlineSCAD(geometry)
 	var conIntersect=2;
 	
 	
-	s+="use &lt;PolyhedronOutlinerLib.scad&gt;;"
-	s+="generateConnectors = 1; generateSticks = 0;";
+	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
+	s+="generateConnectors = 0; generateSticks=1-generateConnectors;";
 	s+="sR=" + sR + "; sL = 6; cR=100; cL=10;\n";
+	//s+="!vertexBase(0, 1);";
 	s+="%mainShape();\n";
 
 	// generate connectorz
 
 
+	var connectorzFn = ""; 
 
 	for (var i = 0; i < v2fTable.length; i++) {
+
+		connectorzFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 
+
+
 		var fList = v2fTable[i];
 		var vList = v2Oriented[i]; 
 
@@ -197,17 +203,16 @@ function CreatePolyOutlineSCAD(geometry)
 
 			
 
-			var mainStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 0, 0);
-			var mainCutStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 1, 0);
+			var mainStick = generateStickSCAD(vA, vP, vB, vC, 0, 0, 1, 0);
+			//var mainCutStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 1, 0);
 
 			var smallStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, -wall, 0);
 			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.15);
 			
 			if (cutStick)
 			{
-				sticks += mainStick;
-				sticks += "if (generateConnectors) {" + mainCutStick + cutStick+ "}";
-				sticks += "if (generateSticks) {"  + smallStick + "}";
+				sticks += "if (generateConnectors){"+cutStick+"}\n";
+				sticks += "if (generateSticks){difference(){"+mainStick+"vertexBase"+i+"();vertexBase"+vList[vi]+"();}"+ smallStick + "}\n";
 			}
 
 			//break;	
@@ -264,6 +269,9 @@ function CreatePolyOutlineSCAD(geometry)
 
 		// true normal
 		nSum.add(vA);
+
+		connectorzFn += LineSCAD(vA, nSum, "cR", "cL", "3");
+		connectorzFn += "}}";
 		s += "/* NORMAL */ if (generateConnectors) intersection() {" + LineSCAD(vA, nSum, "cR", "cL", "3") + "*" + SphereSCAD(noCutL+smallCutL+conIntersect, vA) + "}";
 		s += sticks;
 
@@ -273,6 +281,8 @@ function CreatePolyOutlineSCAD(geometry)
 	//		if (i > 1) 
 		//break;
 	}
+
+	
 	//s += "}}%mainShape();";
 
 	// generate original poly in scad
@@ -293,6 +303,7 @@ function CreatePolyOutlineSCAD(geometry)
 		points += pV3(vertex);
 	}
 	
+	s+= connectorzFn;
 	s+= "module mainShape() {polyhedron(points = [" + points + "], triangles = [" + triangles + "], convexity = 10);}\n";
 	
 	return s;
