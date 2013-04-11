@@ -145,10 +145,10 @@ function CreatePolyOutlineSCAD(geometry)
 	
 	
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
-	s+="generateConnectors = 0; generateSticks=1-generateConnectors;";
+	s+="forPrint=1; generateConnectors = 0; generateSticks=1-generateConnectors;";
 	s+="sR=" + sR + "; sL = 6; cR=100; cL=10;\n";
-	s+="*edge0_1(1); !vertex0(1);";
-	s+="%mainShape();\n";
+	s+="*edge0_1(1); *vertex0(1);";
+	s+="if (!forPrint) %mainShape();\n";
 
 	// generate connectorz
 
@@ -157,6 +157,10 @@ function CreatePolyOutlineSCAD(geometry)
 	var vertexFn = "";
 
 	var sticksFn = "";
+
+	var vAssemblyPosX = 0;
+	var vertexAssembly = "if (generateConnectors && forPrint) union() {";
+
 
 	for (var i = 0; i < v2fTable.length; i++) 
 	{
@@ -244,17 +248,15 @@ function CreatePolyOutlineSCAD(geometry)
 		vertexFn += "}";
 		vertexFn += "}";
 
-		//s += "/* NORMAL */ if (generateConnectors) intersection() {" + LineSCAD(vA, nSum, "cR", "cL", "3") + "*" + SphereSCAD(noCutL+smallCutL+conIntersect, vA) + "}";
+		
+		vertexAssembly += "translate([" + (vAssemblyPosX) + ",0,0]) vertex" + i + "(1);";
+		vAssemblyPosX += 15;
 
-	//		if (i > 1) 
-		//break;
+		//if (i > 1) break;
 	}
-
-	
-	//s += "}}%mainShape();";
+	vertexAssembly += "}";
 
 	// generate original poly in scad
-
 	var points = "";
 	var triangles = "";
 
@@ -271,6 +273,7 @@ function CreatePolyOutlineSCAD(geometry)
 		points += pV3(vertex);
 	}
 	
+	s += vertexAssembly;
 	s += vertexBaseFn;
 	s += sticksFn;
 	s += vertexFn;
