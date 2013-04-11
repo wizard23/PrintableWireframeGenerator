@@ -137,7 +137,7 @@ function CreatePolyOutlineSCAD(geometry)
 
 	var sR = 1.5;
 
-	var wall = 1.75;
+	var wall = 1.6;
 	var noCutL=7;
 	var extraCutDepth=1; // to give slack 	
 	var smallCutL=3;
@@ -210,7 +210,7 @@ function CreatePolyOutlineSCAD(geometry)
 			//var mainCutStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 1, 0);
 
 			var smallStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, -wall, 0);
-			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.5);
+			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.42);
 
 
 			cutSticks += cutStick;
@@ -228,7 +228,7 @@ function CreatePolyOutlineSCAD(geometry)
 
 				sticksAssembly += "translate([" + (sAssemblyPosX) + ",0,0]) edge" + i + "_" + bIdx + "(1);"
 
-				sAssemblyPosX += 5;
+				sAssemblyPosX += 3.2;
 
 				sticksFn += "}"; // module end
 			}
@@ -281,7 +281,7 @@ function CreatePolyOutlineSCAD(geometry)
 	}
 	
 	s += vertexAssembly;
-	s += "translate([0,-20,0])" + sticksAssembly;
+	s += "translate([0,-18,0])" + sticksAssembly;
 	s += vertexBaseFn;
 	s += sticksFn;
 	s += vertexFn;
@@ -374,7 +374,7 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack, returnInvR
 	rA = rA - ((180 - angle* 180/Math.PI)/2);
 
 	var xLen = 1;
-	var extraH = 1.8;
+	var extraH = 1.65;
 
 	var edgeX = Math.cos(-angle/2);
 	var edgeY = Math.sin(-angle/2);
