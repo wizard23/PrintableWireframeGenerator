@@ -158,11 +158,13 @@ function CreatePolyOutlineSCAD(geometry)
 
 	var sticksFn = "";
 
-	var vAssemblyPosX = 0;
-	var vertexAssembly = "if (generateConnectors && forPrint) union() {";
+	var vPlatePosX = 0;
+	var vetrexPlate = "if (generateConnectors && forPrint) union() {";
 
-	var sAssemblyPosX = 0;
-	var sticksAssembly = "if (generateSticks && forPrint) union() {";
+	var sPlatePosX = 0;
+	var sticksPlate = "if (generateSticks && forPrint) union() {";
+
+	
 
 	for (var i = 0; i < v2fTable.length; i++) 
 	{
@@ -226,9 +228,9 @@ function CreatePolyOutlineSCAD(geometry)
 				sticksFn += "if (forPrint) " + invRot + "{" + realE + "}";
 				sticksFn += "if (!forPrint) {" + realE + "}";
 
-				sticksAssembly += "translate([" + (sAssemblyPosX) + ",0,0]) edge" + i + "_" + bIdx + "(1);"
+				sticksPlate += "translate([" + (sPlatePosX) + ",0,0]) edge" + i + "_" + bIdx + "(1);"
 
-				sAssemblyPosX += 3.2;
+				sPlatePosX += 3.2;
 
 				sticksFn += "}"; // module end
 			}
@@ -255,13 +257,13 @@ function CreatePolyOutlineSCAD(geometry)
 		vertexFn += "}";
 
 		
-		vertexAssembly += "translate([" + (vAssemblyPosX) + ",0,0]) vertex" + i + "(1);";
-		vAssemblyPosX += 15;
+		vetrexPlate += "translate([" + (vPlatePosX) + ",0,0]) vertex" + i + "(1);";
+		vPlatePosX += 15;
 
 		//if (i > 1) break;
 	}
-	vertexAssembly += "}";
-	sticksAssembly += "}";
+	vetrexPlate += "}";
+	sticksPlate += "}";
 
 	// generate original poly in scad
 	var points = "";
@@ -280,8 +282,8 @@ function CreatePolyOutlineSCAD(geometry)
 		points += pV3(vertex);
 	}
 	
-	s += vertexAssembly;
-	s += "translate([0,-18,0])" + sticksAssembly;
+	s += vetrexPlate;
+	s += "translate([0,-18,0])" + sticksPlate;
 	s += vertexBaseFn;
 	s += sticksFn;
 	s += vertexFn;
@@ -356,7 +358,7 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack, returnInvR
 	var angle = Math.acos(cosA);
 	
 	// I dont understand that criterium but it works for me :)
-	if (angle < Math.PI/2) angle =  -angle;
+	//if (angle < Math.PI/2) angle =  -angle;
 
 	var bR = LineRotations(bDir).multiplyScalar(1);
 	var invR = new THREE.Matrix4().setRotationFromEuler(bR, "ZXY");
