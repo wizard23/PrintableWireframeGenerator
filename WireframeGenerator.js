@@ -138,15 +138,13 @@ function CreatePolyOutlineSCAD(geometry)
 	var sR = 1.5;
 
 	var wall = 1.6;
-	var noCutL=7;
+	var noCutL=4;
 	var extraCutDepth=1; // to give slack 	
-	var smallCutL=3;
-	var conIntersect=2;
 	
 	
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
-	s+="forPrint=1; generateConnectors = 1; generateSticks=0;";
-	s+="sR=" + sR + "; sL = 6; cR=30; cL=10;\n";
+	s+="forPrint=0; generateConnectors = 0; generateSticks=1;";
+	s+="sR=" + sR + "; sL = 6; cR=7; cL=7;\n";
 	s+="*edge0_1(1); *vertex0(1);";
 	s+="if (!forPrint) %mainShape();\n";
 
@@ -163,6 +161,10 @@ function CreatePolyOutlineSCAD(geometry)
 
 	var sPlatePosX = 0;
 	var sticksPlate = "if (generateSticks && forPrint) union() {";
+
+
+	var vertexAssembly = "if (generateConnectors && !forPrint) union() {";
+	var sticksAssembly = "if (generateSticks && !forPrint) union() {";
 
 	
 
@@ -204,7 +206,6 @@ function CreatePolyOutlineSCAD(geometry)
 			//var wall = 1;
 			//var noCutL=5;
 			//var extraCutDepth=1; // to give slack 	
-			//var smallCutL=3;
 
 			
 			var invRot = generateStickSCAD(vA, vP, vB, vC, 0, 0, 0, 0, true);
@@ -228,8 +229,9 @@ function CreatePolyOutlineSCAD(geometry)
 				sticksFn += "if (forPrint) " + invRot + "{" + realE + "}";
 				sticksFn += "if (!forPrint) {" + realE + "}";
 
+				sticksAssembly += "edge" + i + "_" + bIdx + "(0);";
+				
 				sticksPlate += "translate([" + (sPlatePosX) + ",0,0]) edge" + i + "_" + bIdx + "(1);"
-
 				sPlatePosX += 3.2;
 
 				sticksFn += "}"; // module end
@@ -240,8 +242,9 @@ function CreatePolyOutlineSCAD(geometry)
 		var nSumVA = new THREE.Vector3();
 		nSumVA.addVectors(nSum, vA);
 
-		vertexBaseFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 	
-		vertexBaseFn += LineSCAD(vA, nSumVA, "cR", "cL", "3");
+		vertexBaseFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 
+		vertexBaseFn += SphereSCAD("cR", vA, 24);
+		//vertexBaseFn += LineSCAD(vA, nSumVA, "5*cR", "cL", "3");
 		vertexBaseFn += "}}";
 
 		
@@ -256,12 +259,16 @@ function CreatePolyOutlineSCAD(geometry)
 		vertexFn += "}";
 		vertexFn += "}";
 
-		
+		vertexAssembly += "vertex" + i + "(0);";
+
 		vetrexPlate += "translate([" + (vPlatePosX) + ",0,0]) vertex" + i + "(1);";
 		vPlatePosX += 15;
 
 		//if (i > 1) break;
 	}
+	vertexAssembly += "}";
+	sticksAssembly += "}";
+
 	vetrexPlate += "}";
 	sticksPlate += "}";
 
@@ -282,6 +289,8 @@ function CreatePolyOutlineSCAD(geometry)
 		points += pV3(vertex);
 	}
 	
+	s += vertexAssembly;
+	s += sticksAssembly;
 	s += vetrexPlate;
 	s += "translate([0,-18,0])" + sticksPlate;
 	s += vertexBaseFn;
@@ -358,7 +367,7 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack, returnInvR
 	var angle = Math.acos(cosA);
 	
 	// I dont understand that criterium but it works for me :)
-	//if (angle < Math.PI/2) angle =  -angle;
+	if (angle < Math.PI/2) angle =  -angle;
 
 	var bR = LineRotations(bDir).multiplyScalar(1);
 	var invR = new THREE.Matrix4().setRotationFromEuler(bR, "ZXY");
@@ -375,7 +384,7 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack, returnInvR
 	var rA = (Math.atan2(revN.y, revN.x)) * 180/Math.PI;
 	rA = rA - ((180 - angle* 180/Math.PI)/2);
 
-	var xLen = 1;
+	var xLen = 0.6;
 	var extraH = 1.65;
 
 	var edgeX = Math.cos(-angle/2);
