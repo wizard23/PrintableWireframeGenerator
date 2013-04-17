@@ -144,7 +144,7 @@ function CreatePolyOutlineSCAD(geometry)
 	
 	s+="use &lt;PolyhedronOutlinerLib.scad&gt;"
 	s+="forPrint=0; generateConnectors = 0; generateSticks=1;";
-	s+="sR=" + sR + "; sL = 6; cR=7; cL=7;\n";
+	s+="sR=" + sR + "; sL = 6; cR=6; cL=5;\n";
 	s+="*edge0_1(1); *vertex0(1);";
 	s+="if (!forPrint) %mainShape();\n";
 
@@ -209,32 +209,38 @@ function CreatePolyOutlineSCAD(geometry)
 
 			
 			var invRot = generateStickSCAD(vA, vP, vB, vC, 0, 0, 0, 0, true);
-			var mainStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, 1, 0);
+			var mainStick = generateStickSCAD(vA, vP, vB, vC, -10, -10, 1, 0);
 			//var mainCutStick = generateStickSCAD(vA, vP, vB, vC, noCutL+smallCutL, noCutL+smallCutL, 1, 0);
 
 			var smallStick = generateStickSCAD(vA, vP, vB, vC, noCutL, noCutL, -wall, 0);
 			var cutStick = generateStickSCAD(vA, vP, vB, vC, noCutL-extraCutDepth, noCutL-extraCutDepth, -wall, 0.42);
+			cutStick = generateStickSCAD(vA, vP, vB, vC, -10, -10, 1, 0);
 
-
+			// this gets cut away from connector
 			cutSticks += cutStick;
 
 			if (i < bIdx)
 			{
 				var realE = "";
+				/*				
 				realE += "intersection() { mainShape(); ";
 				realE += "union(){difference(){"+mainStick+"vertexBase"+i+"();vertexBase"+vList[vi]+"();}"+ smallStick + "}\n";
+				realE += "}"; // intersection end
+				*/
+
+				realE += "intersection() { mainShape(); ";
+				realE += "union(){"+mainStick+"}\n";
 				realE += "}"; // intersection end
 
 				sticksFn += "module edge" + i + "_" + bIdx + "(forPrint){"; // module start
 				sticksFn += "if (forPrint) " + invRot + "{" + realE + "}";
 				sticksFn += "if (!forPrint) {" + realE + "}";
+				sticksFn += "}"; // module end
 
 				sticksAssembly += "edge" + i + "_" + bIdx + "(0);";
 				
 				sticksPlate += "translate([" + (sPlatePosX) + ",0,0]) edge" + i + "_" + bIdx + "(1);"
 				sPlatePosX += 3.2;
-
-				sticksFn += "}"; // module end
 			}
 		}
 
@@ -244,7 +250,7 @@ function CreatePolyOutlineSCAD(geometry)
 
 		vertexBaseFn += "module vertexBase" + i + "() { intersection() { mainShape(); "; 
 		vertexBaseFn += SphereSCAD("cR", vA, 24);
-		//vertexBaseFn += LineSCAD(vA, nSumVA, "5*cR", "cL", "3");
+		vertexBaseFn += LineSCAD(vA, nSumVA, "5*cR", "cL", "3");
 		vertexBaseFn += "}}";
 
 		
@@ -385,7 +391,7 @@ function generateStickSCAD(vA, vP, vB, vC, cutA, cutB, hDelta, slack, returnInvR
 	rA = rA - ((180 - angle* 180/Math.PI)/2);
 
 	var xLen = 0.6;
-	var extraH = 1.65;
+	var extraH = 1;
 
 	var edgeX = Math.cos(-angle/2);
 	var edgeY = Math.sin(-angle/2);
